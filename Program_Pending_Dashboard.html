@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Program Pending - ERP UAT Tracker</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: white;
+            padding: 24px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .header h1 { font-size: 22px; font-weight: 600; }
+        .header .subtitle { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+        .header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .last-updated { font-size: 12px; opacity: 0.7; }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-refresh { background: #00b894; color: white; }
+        .btn-refresh:hover { background: #00a381; }
+        .btn-save { background: #e17055; color: white; }
+        .btn-save:hover { background: #d35141; }
+        .btn-save:disabled { background: #999; cursor: not-allowed; }
+        .btn-export { background: #6c5ce7; color: white; }
+        .btn-export:hover { background: #5a4bd1; }
+
+        /* Setup Banner */
+        .setup-banner {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 16px 24px;
+            margin: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .setup-banner.hidden { display: none; }
+        .setup-banner .icon { font-size: 24px; }
+        .setup-banner input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .setup-banner .btn-connect { background: #0984e3; color: white; }
+
+        /* Dashboard Cards */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            padding: 20px 24px;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: translateY(-2px); }
+        .card .number { font-size: 32px; font-weight: 700; }
+        .card .label { font-size: 12px; color: #666; margin-top: 4px; }
+        .card.total .number { color: #2d3436; }
+        .card.program .number { color: #0984e3; }
+        .card.report .number { color: #6c5ce7; }
+        .card.pending .number { color: #e17055; }
+        .card.inprogress .number { color: #fdcb6e; }
+        .card.completed .number { color: #00b894; }
+
+        /* Progress Bar */
+        .progress-section {
+            padding: 0 24px 16px;
+        }
+        .progress-bar-container {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .progress-bar-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .progress-bar {
+            height: 24px;
+            background: #eee;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+        }
+        .progress-bar .segment {
+            height: 100%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: white;
+            font-weight: 600;
+        }
+        .seg-completed { background: #00b894; }
+        .seg-inprogress { background: #fdcb6e; color: #333 !important; }
+        .seg-pending { background: #e17055; }
+
+        /* Table */
+        .table-section {
+            padding: 0 24px 24px;
+        }
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .table-header h2 { font-size: 16px; }
+        .filter-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .filter-group select, .filter-group input {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            background: white;
+        }
+        table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-collapse: collapse;
+        }
+        th {
+            background: #2d3436;
+            color: white;
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+            vertical-align: top;
+        }
+        tr:hover { background: #f8f9fa; }
+        tr.row-completed { background: #f0fff4; }
+        tr.row-inprogress { background: #fffcf0; }
+
+        /* Editable Cells */
+        .editable-select {
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            background: white;
+            cursor: pointer;
+            width: 120px;
+        }
+        .editable-select.changed {
+            border-color: #e17055;
+            background: #fff5f3;
+        }
+        .editable-input {
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            width: 80px;
+            text-align: center;
+        }
+        .editable-input.changed {
+            border-color: #e17055;
+            background: #fff5f3;
+        }
+
+        /* Type Badge */
+        .type-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .type-program { background: #dfe6e9; color: #2d3436; }
+        .type-report { background: #e8daef; color: #6c5ce7; }
+
+        /* Status Indicator */
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+        .dot-pending { background: #e17055; }
+        .dot-inprogress { background: #fdcb6e; }
+        .dot-completed { background: #00b894; }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .notification.show { transform: translateX(0); }
+        .notification.success { background: #00b894; }
+        .notification.error { background: #e17055; }
+        .notification.info { background: #0984e3; }
+
+        /* Unsaved indicator */
+        .unsaved-count {
+            background: #e17055;
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+        .unsaved-count.hidden { display: none; }
+
+        /* Loading */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+        .loading-overlay.hidden { display: none; }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #ddd;
+            border-top: 4px solid #0984e3;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header { padding: 16px; }
+            .header h1 { font-size: 18px; }
+            .dashboard { padding: 12px; gap: 10px; }
+            .table-section { padding: 0 12px 16px; overflow-x: auto; }
+            td, th { padding: 8px 10px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div style="text-align:center;">
+        <div class="spinner"></div>
+        <p style="margin-top:12px; color:#666;">Loading data...</p>
+    </div>
+</div>
+
+<!-- Notification -->
+<div class="notification" id="notification"></div>
+
+<!-- Header -->
+<div class="header">
+    <div>
+        <h1>Program Pending - ERP UAT Tracker</h1>
+        <div class="subtitle">MCF Gold - Program Development Status</div>
+    </div>
+    <div class="header-right">
+        <span class="last-updated" id="lastUpdated">-</span>
+        <button class="btn btn-refresh" onclick="loadData()">Refresh</button>
+        <button class="btn btn-save" id="btnSave" onclick="saveChanges()" disabled>
+            Save <span class="unsaved-count hidden" id="unsavedCount">0</span>
+        </button>
+        <button class="btn btn-export" onclick="exportCSV()">Export CSV</button>
+    </div>
+</div>
+
+<!-- Setup Banner -->
+<div class="setup-banner" id="setupBanner">
+    <span class="icon">&#9881;</span>
+    <div>
+        <strong>Setup Required:</strong> Please enter your Google Apps Script Web App URL
+    </div>
+    <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxxx/exec" />
+    <button class="btn btn-connect" onclick="connectAPI()">Connect</button>
+</div>
+
+<!-- Dashboard Cards -->
+<div class="dashboard" id="dashboardCards">
+    <div class="card total"><div class="number" id="totalCount">-</div><div class="label">Total Programs</div></div>
+    <div class="card program"><div class="number" id="programCount">-</div><div class="label">Program</div></div>
+    <div class="card report"><div class="number" id="reportCount">-</div><div class="label">Report</div></div>
+    <div class="card pending"><div class="number" id="pendingCount">-</div><div class="label">Pending</div></div>
+    <div class="card inprogress"><div class="number" id="inprogressCount">-</div><div class="label">In Progress</div></div>
+    <div class="card completed"><div class="number" id="completedCount">-</div><div class="label">Completed</div></div>
+</div>
+
+<!-- Progress Bar -->
+<div class="progress-section">
+    <div class="progress-bar-container">
+        <div class="progress-bar-label">
+            <span>Overall Progress</span>
+            <span id="progressPercent">0%</span>
+        </div>
+        <div class="progress-bar" id="progressBar">
+            <div class="segment seg-completed" id="segCompleted" style="width:0%"></div>
+            <div class="segment seg-inprogress" id="segInprogress" style="width:0%"></div>
+            <div class="segment seg-pending" id="segPending" style="width:100%"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="table-section">
+    <div class="table-header">
+        <h2>Program List (27 items)</h2>
+        <div class="filter-group">
+            <select id="filterType" onchange="applyFilters()">
+                <option value="all">All Types</option>
+                <option value="Program">Program</option>
+                <option value="Report">Report</option>
+            </select>
+            <select id="filterStatus" onchange="applyFilters()">
+                <option value="all">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+            </select>
+            <input type="text" id="searchBox" placeholder="Search..." oninput="applyFilters()" />
+        </div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:50px">No.</th>
+                <th style="width:80px">Type</th>
+                <th>Description</th>
+                <th style="width:100px">% Completed</th>
+                <th style="width:140px">Status</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            <tr><td colspan="5" style="text-align:center; padding:40px; color:#999;">Please connect to Google Sheets API first</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // ============ State ============
+    let API_URL = '';
+    let allData = [];
+    let pendingChanges = {};  // { "row_field": { row, field, value } }
+
+    // ============ Init ============
+    window.onload = function() {
+        const savedUrl = localStorage.getItem('gsheet_api_url');
+        if (savedUrl) {
+            API_URL = savedUrl;
+            document.getElementById('setupBanner').classList.add('hidden');
+            loadData();
+        } else {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+    };
+
+    // ============ Connect API ============
+    function connectAPI() {
+        const url = document.getElementById('apiUrlInput').value.trim();
+        if (!url || !url.startsWith('https://script.google.com')) {
+            showNotification('Please enter a valid Google Apps Script URL', 'error');
+            return;
+        }
+        API_URL = url;
+        localStorage.setItem('gsheet_api_url', url);
+        document.getElementById('setupBanner').classList.add('hidden');
+        loadData();
+    }
+
+    // ============ Load Data ============
+    function loadData() {
+        if (!API_URL) return;
+        document.getElementById('loadingOverlay').classList.remove('hidden');
+
+        fetch(API_URL)
+            .then(res => res.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    allData = result.data;
+                    pendingChanges = {};
+                    updateDashboard();
+                    renderTable();
+                    updateSaveButton();
+                    document.getElementById('lastUpdated').textContent = 'Updated: ' + result.lastUpdated;
+                    showNotification('Data loaded: ' + allData.length + ' items', 'success');
+                } else {
+                    showNotification('Error: ' + result.message, 'error');
+                }
+            })
+            .catch(err => {
+                showNotification('Connection failed. Check your API URL.', 'error');
+                console.error(err);
+            })
+            .finally(() => {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+            });
+    }
+
+    // ============ Update Dashboard ============
+    function updateDashboard() {
+        const total = allData.length;
+        const programs = allData.filter(d => d['Type'] === 'Program').length;
+        const reports = allData.filter(d => d['Type'] === 'Report').length;
+
+        // ใช้ค่าปัจจุบัน (รวม pending changes)
+        let pending = 0, inprogress = 0, completed = 0;
+        allData.forEach((d, i) => {
+            const status = getEffectiveValue(i + 1, 'Status', d['Status']);
+            if (status === 'Completed') completed++;
+            else if (status === 'In Progress') inprogress++;
+            else pending++;
+        });
+
+        document.getElementById('totalCount').textContent = total;
+        document.getElementById('programCount').textContent = programs;
+        document.getElementById('reportCount').textContent = reports;
+        document.getElementById('pendingCount').textContent = pending;
+        document.getElementById('inprogressCount').textContent = inprogress;
+        document.getElementById('completedCount').textContent = completed;
+
+        // Progress bar
+        const pctCompleted = total > 0 ? (completed / total * 100) : 0;
+        const pctInprogress = total > 0 ? (inprogress / total * 100) : 0;
+        const pctPending = total > 0 ? (pending / total * 100) : 0;
+
+        document.getElementById('segCompleted').style.width = pctCompleted + '%';
+        document.getElementById('segCompleted').textContent = pctCompleted > 5 ? Math.round(pctCompleted) + '%' : '';
+        document.getElementById('segInprogress').style.width = pctInprogress + '%';
+        document.getElementById('segInprogress').textContent = pctInprogress > 5 ? Math.round(pctInprogress) + '%' : '';
+        document.getElementById('segPending').style.width = pctPending + '%';
+        document.getElementById('segPending').textContent = pctPending > 5 ? Math.round(pctPending) + '%' : '';
+        document.getElementById('progressPercent').textContent = Math.round(pctCompleted) + '% Completed';
+    }
+
+    // ============ Get effective value (with pending changes) ============
+    function getEffectiveValue(row, field, original) {
+        const key = row + '_' + field;
+        return pendingChanges[key] ? pendingChanges[key].value : original;
+    }
+
+    // ============ Render Table ============
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        const filterType = document.getElementById('filterType').value;
+        const filterStatus = document.getElementById('filterStatus').value;
+        const search = document.getElementById('searchBox').value.toLowerCase();
+
+        let html = '';
+        allData.forEach((d, i) => {
+            const row = i + 1;
+            const type = d['Type'];
+            const desc = d['Description'] || '';
+            const pctVal = getEffectiveValue(row, '%Completed', d['%Completed']);
+            const statusVal = getEffectiveValue(row, 'Status', d['Status']);
+
+            // Filters
+            if (filterType !== 'all' && type !== filterType) return;
+            if (filterStatus !== 'all' && statusVal !== filterStatus) return;
+            if (search && !desc.toLowerCase().includes(search) && !type.toLowerCase().includes(search)) return;
+
+            const rowClass = statusVal === 'Completed' ? 'row-completed' : statusVal === 'In Progress' ? 'row-inprogress' : '';
+            const typeBadge = type === 'Report' ? 'type-report' : 'type-program';
+            const pctChanged = pendingChanges[row + '_%Completed'] ? 'changed' : '';
+            const statusChanged = pendingChanges[row + '_Status'] ? 'changed' : '';
+
+            // Clean % display
+            let pctDisplay = pctVal;
+            if (pctDisplay === '%' || pctDisplay === '' || pctDisplay === null || pctDisplay === undefined) {
+                pctDisplay = '0';
+            }
+            pctDisplay = String(pctDisplay).replace('%', '');
+
+            html += '<tr class="' + rowClass + '">';
+            html += '<td style="text-align:center; font-weight:600;">' + d['No.'] + '</td>';
+            html += '<td><span class="type-badge ' + typeBadge + '">' + type + '</span></td>';
+            html += '<td>' + desc.substring(0, 120) + (desc.length > 120 ? '...' : '') + '</td>';
+            html += '<td style="text-align:center;">';
+            html += '<input type="number" class="editable-input ' + pctChanged + '" min="0" max="100" value="' + pctDisplay + '" ';
+            html += 'onchange="onCellChange(' + row + ', \'%Completed\', this.value + \'%\')" />';
+            html += '</td>';
+            html += '<td>';
+            html += '<select class="editable-select ' + statusChanged + '" onchange="onCellChange(' + row + ', \'Status\', this.value)">';
+            html += '<option value="Pending"' + (statusVal === 'Pending' ? ' selected' : '') + '>Pending</option>';
+            html += '<option value="In Progress"' + (statusVal === 'In Progress' ? ' selected' : '') + '>In Progress</option>';
+            html += '<option value="Completed"' + (statusVal === 'Completed' ? ' selected' : '') + '>Completed</option>';
+            html += '</select>';
+            html += '</td>';
+            html += '</tr>';
+        });
+
+        if (!html) {
+            html = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#999;">No data matching filters</td></tr>';
+        }
+        tbody.innerHTML = html;
+    }
+
+    // ============ Cell Change ============
+    function onCellChange(row, field, value) {
+        const key = row + '_' + field;
+        pendingChanges[key] = { row: row, field: field, value: value };
+        updateSaveButton();
+        updateDashboard();
+        renderTable();
+    }
+
+    // ============ Update Save Button ============
+    function updateSaveButton() {
+        const count = Object.keys(pendingChanges).length;
+        const btn = document.getElementById('btnSave');
+        const badge = document.getElementById('unsavedCount');
+        btn.disabled = count === 0;
+        if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+
+    // ============ Save Changes ============
+    function saveChanges() {
+        if (!API_URL) return;
+        const updates = Object.values(pendingChanges);
+        if (updates.length === 0) return;
+
+        document.getElementById('loadingOverlay').classList.remove('hidden');
+
+        fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({ updates: updates })
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.status === 'success') {
+                showNotification('Saved ' + updates.length + ' changes!', 'success');
+                loadData(); // Reload fresh data
+            } else {
+                showNotification('Save failed: ' + result.message, 'error');
+            }
+        })
+        .catch(err => {
+            showNotification('Save failed. Check connection.', 'error');
+            console.error(err);
+        })
+        .finally(() => {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        });
+    }
+
+    // ============ Apply Filters ============
+    function applyFilters() {
+        renderTable();
+    }
+
+    // ============ Export CSV ============
+    function exportCSV() {
+        if (allData.length === 0) return;
+
+        let csv = 'No.,Type,Description,%Completed,Status\n';
+        allData.forEach((d, i) => {
+            const row = i + 1;
+            const pct = getEffectiveValue(row, '%Completed', d['%Completed']);
+            const status = getEffectiveValue(row, 'Status', d['Status']);
+            const desc = (d['Description'] || '').replace(/"/g, '""').replace(/\n/g, ' ');
+            csv += d['No.'] + ',"' + d['Type'] + '","' + desc + '","' + pct + '","' + status + '"\n';
+        });
+
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'Program_Pending_' + new Date().toISOString().slice(0,10) + '.csv';
+        link.click();
+    }
+
+    // ============ Notification ============
+    function showNotification(msg, type) {
+        const el = document.getElementById('notification');
+        el.textContent = msg;
+        el.className = 'notification ' + type + ' show';
+        setTimeout(() => { el.classList.remove('show'); }, 3000);
+    }
+</script>
+
+</body>
+</html>
